@@ -2,17 +2,28 @@ import React, { useState, useMemo, useCallback } from "react";
 
 /*
   ChildComponent is wrapped with React.memo to avoid unnecessary re-renders.
-  useMemo is used to keep the `numbers` array reference stable across renders.
-  useCallback ensures the click handler reference does not change,
-  so the child re-renders only when its actual props change.
+  - numbers is memoized in parent using useMemo
+  - onClick is a stable callback from parent
+  - source is a primitive string (stable)
+  - child creates its own click handler using useCallback
 */
 
-const ChildComponent = React.memo(function ChildComponent({ numbers, onClick }) {
-  const sum = numbers.reduce((sum, el) => {
-    return sum + el;
-  }, 0);
+const ChildComponent = React.memo(function ChildComponent({
+  numbers,
+  onClick,
+  source,
+}) {
+  const sum = useMemo(() => {
+    return numbers.reduce((total, el) => {
+      return total + el;
+    }, 0);
+  }, [numbers]);
 
-  console.log("ChildComponent handled!!!", sum);
+  console.log("ChildComponent rendered. Sum:", sum);
+
+  const handleChildClick = useCallback(() => {
+    onClick(source);
+  }, [onClick, source]);
 
   return (
     <div>
@@ -21,7 +32,8 @@ const ChildComponent = React.memo(function ChildComponent({ numbers, onClick }) 
           return <li key={num}>{num}</li>;
         })}
       </ul>
-      <button onClick={onClick}>Child click</button>
+
+      <button onClick={handleChildClick}>Child click</button>
     </div>
   );
 });
@@ -33,26 +45,30 @@ export default function App() {
     return [1, 2, 3, 4, 5];
   }, []);
 
-  const handleClick = useCallback(() => {
-    console.log("Parent click handled !!!");
+  // ONE shared, stable callback
+  const handleClick = useCallback((source) => {
+    console.log(`${source} clicked`);
     setClick((prev) => {
       return prev + 1;
     });
   }, []);
 
+  // Stable parent click handler
   const handleParentClick = useCallback(() => {
-    setClick((prev) => {
-      return prev + 1;
-    });
-  }, []);
+    handleClick("Parent");
+  }, [handleClick]);
 
   return (
     <div>
-      <button onClick={handleParentClick}>
-        Click me — Parent clicks: {click}
-      </button>
+      <p>Parent clicks: {click}</p>
 
-      <ChildComponent numbers={numbers} onClick={handleClick} />
+      <button onClick={handleParentClick}>Click Parent</button>
+
+      <ChildComponent
+        numbers={numbers}
+        onClick={handleClick}
+        source="Child"
+      />
     </div>
   );
 }
