@@ -1,16 +1,23 @@
 import "./styles.css";
-import React, { useEffect, useState } from "react";
-const a = [3, 2, 7, 1];
+import React, { useMemo } from "react";
+
+const a = [3, 2, "b", 7, 1];
 const obj1 = { x: 4, y: 5, z: 0 };
 
 const useDecreasingOrder = (arr, obj) => {
-  const [descSorted, setDescSorted] = useState([]);
+  const descSorted = useMemo(() => {
+    const merged = [...arr, ...Object.values(obj)];
 
-  useEffect(() => {
-    const combinedArray = [...arr, ...Object.values(obj)];
-    combinedArray.sort((x, y) => y - x);
-    setDescSorted(combinedArray);
-  }, []);
+    const onlyNumbers = merged.filter((value) => {
+      return Number.isFinite(value);
+    });
+
+    const sortedDesc = [...onlyNumbers].sort((a, b) => {
+      return b - a;
+    });
+
+    return sortedDesc;
+  }, [arr, obj]);
 
   return { descSorted };
 };
@@ -18,17 +25,19 @@ const useDecreasingOrder = (arr, obj) => {
 const PrintDescOrder = ({ descSorted }) => {
   return (
     <ul>
-      {descSorted.map((number) => {
-        return <li> {number} </li>;
+      {descSorted.map((number, index) => {
+        return <li key={index}>{number}</li>;
       })}
     </ul>
   );
 };
+
 export default function App() {
   const { descSorted } = useDecreasingOrder(a, obj1);
+
   return (
     <div className="App">
-      <h1>Take arary and bject,merged adn printed in desending order !!!!</h1>
+      <h1>Array + Object merged & sorted in descending order</h1>
       <PrintDescOrder descSorted={descSorted} />
     </div>
   );
